@@ -2,31 +2,42 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
+# 페이지 설정
+st.set_page_config(page_title="US Stock Analysis", page_icon="📈")
+
 # --------------------------------------------------------------------------
-# [Internal Function] S&P 500 리스트 가져오기 (Dual Source)
+# [Internal Function] S&P 500 리스트 가져오기 (CSV 우선 적용)
 # --------------------------------------------------------------------------
 @st.cache_data
 def get_sp500_tickers():
-    # 1. 위키피디아 시도 (Primary Source)
+    # 1. GitHub CSV 시도 (가장 빠르고 정확함 - Primary)
     try:
-        url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        tables = pd.read_html(url, storage_options=headers)
-        df = tables[0]
+        csv_url = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/master/data/constituents.csv"
+        df = pd.read_csv(csv_url)
         tickers = df['Symbol'].apply(lambda x: x.replace('.', '-')).tolist()
         return tickers, None
-    except Exception as e_wiki:
-        # 2. 실패 시 GitHub CSV 시도 (Secondary Source)
+    except Exception as e_csv:
+        # 2. 실패 시 위키피디아 시도 (Secondary)
         try:
-            print(f"위키피디아 접속 실패 ({e_wiki}), CSV 데이터로 전환합니다.")
-            csv_url = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/master/data/constituents.csv"
-            df = pd.read_csv(csv_url)
+            print(f"CSV 다운로드 실패 ({e_csv}), 위키피디아로 전환합니다.")
+            url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            tables = pd.read_html(url, storage_options=headers)
+            # [수정] 표가 여러 개일 경우 'Symbol' 컬럼이 있는 가장 큰 표를 찾습니다.
+            df = None
+            for table in tables:
+                if 'Symbol' in table.columns and len(table) > 100: # 100개 이상인 표만 인정
+                    df = table
+                    break
+            
+            if df is None: raise Exception("적절한 표를 찾지 못함")
+            
             tickers = df['Symbol'].apply(lambda x: x.replace('.', '-')).tolist()
             return tickers, None
-        except Exception as e_csv:
-            # 3. 전부 실패 시 비상용 리스트 (Fail-safe)
+        except Exception as e_wiki:
+            # 3. 비상용 리스트 (Fail-safe)
             default_tickers = ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA', 'AMZN', 'META', 'AMD', 'INTC', 'KO']
-            error_msg = f"데이터 확보 실패. 비상용 리스트로 동작합니다. (에러: {e_wiki} / {e_csv})"
+            error_msg = f"데이터 확보 실패. 비상용 리스트(Top 10)로 동작합니다. (에러: {e_csv} / {e_wiki})"
             return default_tickers, error_msg
 
 # --------------------------------------------------------------------------
@@ -40,7 +51,7 @@ def calculate_rsi(data, window=14):
     return 100 - (100 / (1 + rs))
 
 # --------------------------------------------------------------------------
-# [UI Section] 
+# [UI Section]
 # --------------------------------------------------------------------------
 st.title("📈 미국 주식 분석기")
 
@@ -89,7 +100,6 @@ with tab1:
 # ==========================================================================
 with tab2:
     st.markdown("### 🏹 조건에 맞는 '저평가 우량주'를 발굴합니다.")
-    st.caption("※ 시간이 오래 걸릴 수 있어 상위 50개만 테스트하려면 아래 체크박스를 켜세요.")
     
     # [Debug Option] 테스트용 단축 모드
     quick_mode = st.checkbox("빠른 테스트 모드 (상위 50개만 스캔)", value=False)
@@ -100,17 +110,21 @@ with tab2:
     target_roe = col_p3.number_input("ROE 기준 (이상 %)", value=10.0)
 
     if st.button("전수 조사 시작", key="btn_scan"):
+        st.cache_data.clear() # 버튼 누를 때마다 캐시 날리고 새로 가져오기 (확실하게!)
         tickers, error_msg = get_sp500_tickers()
         
         if error_msg:
-            st.error(error_msg)
+            st.warning(error_msg)
+        
+        # [검증 포인트] 원본 개수 확인
+        original_count = len(tickers)
         
         # 빠른 테스트 모드일 경우 종목 수 제한
         if quick_mode:
             tickers = tickers[:50]
-            st.info(f"⚡ 빠른 모드: {len(tickers)}개 종목만 스캔합니다.")
+            st.warning(f"⚡ 빠른 모드 활성화: 전체 {original_count}개 중 상위 50개만 스캔합니다.")
         else:
-            st.info(f"🐢 전체 모드: {len(tickers)}개 종목을 모두 스캔합니다. (잠시만 기다려주세요)")
+            st.success(f"🐢 전체 모드 활성화: 총 {original_count}개 전 종목을 스캔합니다.")
 
         results = []
         progress_text = "시장 스캔 중..."
@@ -120,7 +134,6 @@ with tab2:
         total = len(tickers)
         
         for i, ticker in enumerate(tickers):
-            # 진행률 바 업데이트
             if i % 5 == 0: 
                 my_bar.progress((i / total), text=f"{progress_text} ({i}/{total})")
                 status_msg.caption(f"현재 분석 중: **{ticker}**")
@@ -136,10 +149,10 @@ with tab2:
                 hist['RSI'] = calculate_rsi(hist)
                 current_rsi = hist['RSI'].iloc[-1]
 
-                # 1차 필터 (RSI)
+                # 1차 필터
                 if current_rsi > target_rsi: continue
 
-                # 2차 필터 (재무)
+                # 2차 필터
                 info = stock.info
                 per = info.get('trailingPE', 999)
                 roe = info.get('returnOnEquity', 0)
