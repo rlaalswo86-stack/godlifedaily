@@ -6,7 +6,7 @@ import pandas as pd
 st.set_page_config(page_title="US Stock Analysis", page_icon="📈")
 
 # --------------------------------------------------------------------------
-# [Internal Function] S&P 500 리스트 가져오기
+# [Internal Function] S&P 500 리스트 가져오기 (Dual Source)
 # --------------------------------------------------------------------------
 @st.cache_data
 def get_sp500_tickers():
@@ -54,7 +54,7 @@ st.title("📈 미국 주식 분석기")
 tab1, tab2 = st.tabs(["🔍 종목 상세 분석", "🚀 S&P 500 꿀주식 찾기"])
 
 # ==========================================================================
-# [TAB 1] 개별 종목
+# [TAB 1] 개별 종목 상세 조회
 # ==========================================================================
 with tab1:
     st.markdown("### 특정 종목의 차트와 지표를 확인합니다.")
@@ -73,24 +73,31 @@ with tab1:
             else:
                 col1, col2, col3 = st.columns(3)
                 current_price = hist['Close'].iloc[-1]
+                prev_price = hist['Close'].iloc[-2]
+                delta = current_price - prev_price
+                
                 hist['RSI'] = calculate_rsi(hist)
                 curr_rsi = hist['RSI'].iloc[-1]
 
-                col1.metric("현재 주가", f"${current_price:.2f}")
+                col1.metric("현재 주가", f"${current_price:.2f}", f"{delta:.2f}")
                 col2.metric("PER", info.get('trailingPE', 'N/A'))
                 col3.metric("RSI (14일)", f"{curr_rsi:.2f}")
+
                 st.line_chart(hist['Close'])
+                
+                with st.expander("기업 개요"):
+                    st.write(info.get('longBusinessSummary', '정보 없음')[:200] + "...")
 
         except Exception as e:
             st.error(f"에러 발생: {e}")
 
 # ==========================================================================
-# [TAB 2] S&P 500 전수 조사 (검증 기능 추가됨)
+# [TAB 2] S&P 500 전수 조사
 # ==========================================================================
 with tab2:
     st.markdown("### 🏹 조건에 맞는 '저평가 우량주'를 발굴합니다.")
     
-    # [Debug Option] 테스트용 단축 모드
+    # [Option] 테스트용 단축 모드 (이건 유용하니 남겨둡니다)
     quick_mode = st.checkbox("빠른 테스트 모드 (상위 50개만 스캔)", value=False)
     
     col_p1, col_p2, col_p3 = st.columns(3)
@@ -104,25 +111,12 @@ with tab2:
         
         if error_msg: st.warning(error_msg)
         
-        # ------------------------------------------------------------------
-        # 🕵️‍♂️ [검증 포인트] 엔지니어 확인용 로그 (Probe)
-        # ------------------------------------------------------------------
-        raw_count = len(tickers)
-        st.write(f"---")
-        st.write(f"**🛠️ [System Log] 데이터 무결성 점검**")
-        st.write(f"- 원본 데이터 개수: **{raw_count}개** (500~505개면 정상)")
-        
+        # 모드 알림
         if quick_mode:
             tickers = tickers[:50]
-            st.warning(f"⚡ [Mode] 빠른 테스트 모드 ON: 상위 50개만 스캔합니다.")
+            st.info(f"⚡ 빠른 모드: 상위 50개 종목을 스캔합니다.")
         else:
-            st.success(f"🐢 [Mode] 전체 모드 ON: **{len(tickers)}개** 전수 조사를 수행합니다.")
-
-        # 눈으로 직접 확인하는 Raw Data 열람 기능
-        with st.expander("📋 스캔 대상 리스트 전체 보기 (클릭)"):
-            st.write(tickers)
-        st.write(f"---")
-        # ------------------------------------------------------------------
+            st.info(f"🐢 전체 모드: S&P 500 전 종목({len(tickers)}개)을 스캔합니다. (약 3~5분 소요)")
 
         results = []
         progress_text = "시장 스캔 중..."
@@ -132,21 +126,25 @@ with tab2:
         total = len(tickers)
         
         for i, ticker in enumerate(tickers):
+            # 진행률 바 업데이트 (5개마다)
             if i % 5 == 0: 
                 my_bar.progress((i / total), text=f"{progress_text} ({i}/{total})")
-                status_msg.caption(f"현재 분석 중: **{ticker}** ({i+1}/{total})")
+                status_msg.caption(f"현재 분석 중: **{ticker}**")
 
             try:
                 stock = yf.Ticker(ticker)
                 hist = stock.history(period="3mo")
                 if hist.empty: continue
 
+                # 지표 계산
                 current_price = hist['Close'].iloc[-1]
                 hist['RSI'] = calculate_rsi(hist)
                 current_rsi = hist['RSI'].iloc[-1]
 
+                # 1차 필터
                 if current_rsi > target_rsi: continue
 
+                # 2차 필터
                 info = stock.info
                 per = info.get('trailingPE', 999)
                 roe = info.get('returnOnEquity', 0)
@@ -166,12 +164,27 @@ with tab2:
             except:
                 continue
         
+        # 완료 처리
         my_bar.empty()
         status_msg.empty()
         
         if results:
-            st.success(f"🎉 {len(results)}개 종목 발견!")
+            st.success(f"🎉 총 {len(results)}개의 유망 종목을 발굴했습니다!")
             df = pd.DataFrame(results).sort_values(by="RSI")
-            st.dataframe(df, hide_index=True)
+            
+            # 깔끔한 결과 테이블
+            st.dataframe(
+                df,
+                column_config={
+                    "Ticker": "티커",
+                    "Name": "기업명",
+                    "Price": st.column_config.NumberColumn("주가($)", format="$%.2f"),
+                    "RSI": st.column_config.NumberColumn("RSI", format="%.2f"),
+                    "PER": st.column_config.NumberColumn("PER", format="%.2f"),
+                    "ROE": st.column_config.NumberColumn("ROE(%)", format="%.2f%%"),
+                },
+                hide_index=True,
+                use_container_width=True
+            )
         else:
-            st.warning("조건에 맞는 종목이 없습니다.")
+            st.warning("조건에 맞는 종목이 없습니다. 기준을 조금 완화해 보세요.")
