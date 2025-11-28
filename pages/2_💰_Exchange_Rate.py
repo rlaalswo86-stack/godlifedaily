@@ -4,24 +4,6 @@ import pandas as pd
 import time
 
 # --------------------------------------------------------------------------
-# [Style] 지저분한 UI 요소 숨기기 (Pro Mode)
-# --------------------------------------------------------------------------
-hide_decoration_bar_style = '''
-    <style>
-        /* 'Fork' 버튼과 상단 데코레이션 바만 콕 집어서 숨기기 */
-        .stDeployButton {display:none;}
-        [data-testid="stDecoration"] {display:none;}
-        [data-testid="stToolbar"] {visibility: hidden;}
-        
-        /* 하단 푸터 숨기기 */
-        footer {visibility: hidden;}
-    </style>
-'''
-st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
-
-# ... 기존 st.set_page_config ...
-
-# --------------------------------------------------------------------------
 # [Page Setup] 페이지 기본 설정
 # --------------------------------------------------------------------------
 st.set_page_config(page_title="Exchange Rate Monitor", page_icon="💰")
