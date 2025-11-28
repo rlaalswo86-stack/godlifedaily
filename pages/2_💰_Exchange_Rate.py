@@ -4,6 +4,23 @@ import pandas as pd
 import time
 
 # --------------------------------------------------------------------------
+# [Style] 지저분한 UI 요소 숨기기 (Pro Mode)
+# --------------------------------------------------------------------------
+hide_decoration_bar_style = '''
+    <style>
+        /* 우측 상단 'Fork' 버튼 등 헤더 장식 숨기기 */
+        header {visibility: hidden;}
+        /* 하단 'Made with Streamlit' 푸터 숨기기 */
+        footer {visibility: hidden;}
+        /* 뷰어 모드 버튼 숨기기 */
+        .stDeployButton {display:none;}
+    </style>
+'''
+st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
+
+# ... 기존 st.set_page_config ...
+
+# --------------------------------------------------------------------------
 # [Page Setup] 페이지 기본 설정
 # --------------------------------------------------------------------------
 st.set_page_config(page_title="Exchange Rate Monitor", page_icon="💰")
@@ -115,23 +132,3 @@ if rates:
              st.write("☕ 한국 커피 한 잔보다 싸네요!")
         else:
              st.write("💸 한국 커피보다 비싸군요!")
-
-
-# ... import 문들 ...
-
-# --------------------------------------------------------------------------
-# [Style] 지저분한 UI 요소 숨기기 (Pro Mode)
-# --------------------------------------------------------------------------
-hide_decoration_bar_style = '''
-    <style>
-        /* 우측 상단 'Fork' 버튼 등 헤더 장식 숨기기 */
-        header {visibility: hidden;}
-        /* 하단 'Made with Streamlit' 푸터 숨기기 */
-        footer {visibility: hidden;}
-        /* 뷰어 모드 버튼 숨기기 */
-        .stDeployButton {display:none;}
-    </style>
-'''
-st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
-
-# ... 기존 st.set_page_config ...
