@@ -1,39 +1,32 @@
 import streamlit as st
 
 # ... import 문들 ...
-
 # --------------------------------------------------------------------------
-# [Style] 메뉴 버튼은 살리고, 잡다한 텍스트만 숨기기 (Mobile Fix)
+# [Style] 메뉴(☰)는 100% 살리고, 오른쪽 잡동사니만 제거
 # --------------------------------------------------------------------------
 hide_decoration_bar_style = '''
     <style>
-        /* 1. 우측 상단 툴바(점 3개, Fork 버튼 등) 숨기기 */
-        /* 여기서 글자 깨짐 현상이 발생하므로 숨깁니다 */
+        /* 1. 우측 상단 툴바 (점 3개, Fork 버튼, 에러난 아이콘 텍스트 등) */
+        /* visibility 대신 display:none을 써서 아예 공간을 없애버립니다 */
         [data-testid="stToolbar"] {
-            visibility: hidden;
-            right: 2rem;
+            display: none !important;
         }
-        
-        /* 2. 상단 데코레이션(무지개 라인) 숨기기 */
+
+        /* 2. 상단 데코레이션 (무지개 라인) */
         [data-testid="stDecoration"] {
-            display: none;
+            display: none !important;
         }
 
-        /* 3. 하단 푸터 숨기기 */
+        /* 3. 하단 푸터 (Made with Streamlit) */
         footer {
-            visibility: hidden;
+            display: none !important;
         }
 
-        /* [핵심] 헤더 컨테이너는 강제로 보이게 설정! */
-        /* 이걸 해야 왼쪽 햄버거 메뉴(☰)가 살아납니다 */
-        header {
-            visibility: visible !important;
-            background-color: transparent !important;
-        }
+        /* [핵심] header 태그에 대한 스타일은 아예 뺐습니다. */
+        /* 건드리지 않아야 햄버거 버튼이 자연스럽게 살아납니다. */
     </style>
 '''
 st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
-
 # ... 기존 st.set_page_config ...
 
 st.set_page_config(
