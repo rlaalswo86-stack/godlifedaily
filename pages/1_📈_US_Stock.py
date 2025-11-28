@@ -11,8 +11,9 @@ st.set_page_config(page_title="US Stock Analysis", page_icon="📈")
 @st.cache_data
 def get_sp500_tickers():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     try:
-        tables = pd.read_html(url)
+        tables = pd.read_html(url, storage_options=headers)
         df = tables[0]
         tickers = df['Symbol'].apply(lambda x: x.replace('.', '-')).tolist()
         return tickers, None # Return tickers and no error
