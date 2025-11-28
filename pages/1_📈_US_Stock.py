@@ -21,10 +21,11 @@ def get_sp500_tickers():
         tables = pd.read_html(url)
         df = tables[0]
         tickers = df['Symbol'].apply(lambda x: x.replace('.', '-')).tolist()
-        return tickers
+        return tickers, None # Return tickers and no error
     except Exception as e:
-        st.error(f"S&P 500 리스트를 가져오는 데 실패했습니다: {e}")
-        return ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA'] # 비상용
+        default_tickers = ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA'] # 비상용
+        error_msg = f"S&P 500 리스트를 가져오는 데 실패했습니다: {e}. 기본 종목으로 진행합니다."
+        return default_tickers, error_msg # Return default tickers and error message
 
 # --------------------------------------------------------------------------
 # [Internal Function] RSI 계산
@@ -100,7 +101,10 @@ with tab2:
     target_roe = col_p3.number_input("ROE 기준 (이상 %)", value=10.0) # 15.0 -> 10.0으로 완화
 
     if st.button("전수 조사 시작 (Start Scan)", key="btn_scan"):
-        tickers = get_sp500_tickers()
+        tickers, error_fetching_tickers = get_sp500_tickers()
+        if error_fetching_tickers:
+            st.warning(error_fetching_tickers) # Display the warning on the UI
+
         results = []
 
         # 프로그레스 바 설정
