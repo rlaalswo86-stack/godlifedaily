@@ -2,18 +2,27 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
+# ... import 문들 ...
+
 # --------------------------------------------------------------------------
-# [Style] 지저분한 UI 요소 숨기기 (Pro Mode)
+# [Style] 메뉴 버튼은 살리고, 잡다한 버튼만 숨기기
 # --------------------------------------------------------------------------
 hide_decoration_bar_style = '''
     <style>
-        /* 'Fork' 버튼과 상단 데코레이션 바만 콕 집어서 숨기기 */
-        .stDeployButton {display:none;}
-        [data-testid="stDecoration"] {display:none;}
+        /* 1. 우측 상단 'Deploy/Fork' 버튼 숨기기 */
+        .stDeployButton {visibility: hidden;}
+        
+        /* 2. 우측 상단 툴바(점 3개 메뉴) 숨기기 */
+        /* 이 부분에서 아이콘 로딩 에러로 글자가 깨지는 경우가 많습니다 */
         [data-testid="stToolbar"] {visibility: hidden;}
         
-        /* 하단 푸터 숨기기 */
+        /* 3. 상단 데코레이션(무지개 라인) 숨기기 */
+        [data-testid="stDecoration"] {visibility: hidden;}
+
+        /* 4. 하단 푸터 숨기기 */
         footer {visibility: hidden;}
+        
+        /* [중요] 헤더 전체는 건드리지 않습니다! 그래야 메뉴(☰)가 눌립니다 */
     </style>
 '''
 st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
