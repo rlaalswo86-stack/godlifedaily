@@ -8,12 +8,13 @@ import time
 # --------------------------------------------------------------------------
 hide_decoration_bar_style = '''
     <style>
-        /* 우측 상단 'Fork' 버튼 등 헤더 장식 숨기기 */
-        header {visibility: hidden;}
-        /* 하단 'Made with Streamlit' 푸터 숨기기 */
-        footer {visibility: hidden;}
-        /* 뷰어 모드 버튼 숨기기 */
+        /* 'Fork' 버튼과 상단 데코레이션 바만 콕 집어서 숨기기 */
         .stDeployButton {display:none;}
+        [data-testid="stDecoration"] {display:none;}
+        [data-testid="stToolbar"] {visibility: hidden;}
+        
+        /* 하단 푸터 숨기기 */
+        footer {visibility: hidden;}
     </style>
 '''
 st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
