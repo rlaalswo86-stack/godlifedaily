@@ -3,29 +3,6 @@ import yfinance as yf
 import pandas as pd
 
 # --------------------------------------------------------------------------
-# [Style] Pro Mode: 잡다한 UI 요소 숨기기 (이제 안전함!)
-# --------------------------------------------------------------------------
-hide_decoration_bar_style = '''
-    <style>
-        /* 우측 상단 툴바(점 3개, Fork 버튼) 숨기기 */
-        [data-testid="stToolbar"] {visibility: hidden;}
-        
-        /* 상단 데코레이션(무지개 라인) 숨기기 */
-        [data-testid="stDecoration"] {display: none;}
-
-        /* 하단 푸터(Made with Streamlit) 숨기기 */
-        footer {visibility: hidden;}
-        
-        /* 헤더 배경 투명하게 (깔끔함 유지) */
-        header {background-color: transparent !important;}
-    </style>
-'''
-st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
-
-# 페이지 설정
-st.set_page_config(page_title="US Stock Analysis", page_icon="📈")
-
-# --------------------------------------------------------------------------
 # [Internal Function] S&P 500 리스트 가져오기 (Dual Source)
 # --------------------------------------------------------------------------
 @st.cache_data
