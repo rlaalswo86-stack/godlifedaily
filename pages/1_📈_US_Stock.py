@@ -1,9 +1,3 @@
-# Streamlit이 설치되어 있지 않은 경우 설치
-try:
-    import streamlit
-except ImportError:
-    !pip install streamlit
-
 import streamlit as st
 import yfinance as yf
 import pandas as pd
