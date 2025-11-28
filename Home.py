@@ -3,24 +3,33 @@ import streamlit as st
 # ... import 문들 ...
 
 # --------------------------------------------------------------------------
-# [Style] 메뉴 버튼은 살리고, 잡다한 버튼만 숨기기
+# [Style] 메뉴 버튼은 살리고, 잡다한 텍스트만 숨기기 (Mobile Fix)
 # --------------------------------------------------------------------------
 hide_decoration_bar_style = '''
     <style>
-        /* 1. 우측 상단 'Deploy/Fork' 버튼 숨기기 */
-        .stDeployButton {visibility: hidden;}
+        /* 1. 우측 상단 툴바(점 3개, Fork 버튼 등) 숨기기 */
+        /* 여기서 글자 깨짐 현상이 발생하므로 숨깁니다 */
+        [data-testid="stToolbar"] {
+            visibility: hidden;
+            right: 2rem;
+        }
         
-        /* 2. 우측 상단 툴바(점 3개 메뉴) 숨기기 */
-        /* 이 부분에서 아이콘 로딩 에러로 글자가 깨지는 경우가 많습니다 */
-        [data-testid="stToolbar"] {visibility: hidden;}
-        
-        /* 3. 상단 데코레이션(무지개 라인) 숨기기 */
-        [data-testid="stDecoration"] {visibility: hidden;}
+        /* 2. 상단 데코레이션(무지개 라인) 숨기기 */
+        [data-testid="stDecoration"] {
+            display: none;
+        }
 
-        /* 4. 하단 푸터 숨기기 */
-        footer {visibility: hidden;}
-        
-        /* [중요] 헤더 전체는 건드리지 않습니다! 그래야 메뉴(☰)가 눌립니다 */
+        /* 3. 하단 푸터 숨기기 */
+        footer {
+            visibility: hidden;
+        }
+
+        /* [핵심] 헤더 컨테이너는 강제로 보이게 설정! */
+        /* 이걸 해야 왼쪽 햄버거 메뉴(☰)가 살아납니다 */
+        header {
+            visibility: visible !important;
+            background-color: transparent !important;
+        }
     </style>
 '''
 st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
