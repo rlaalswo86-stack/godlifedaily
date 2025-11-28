@@ -101,9 +101,9 @@ with tab2:
     quick_mode = st.checkbox("빠른 테스트 모드 (상위 50개만 스캔)", value=False)
     
     col_p1, col_p2, col_p3 = st.columns(3)
-    target_rsi = col_p1.number_input("RSI 기준 (이하)", value=70)
-    target_per = col_p2.number_input("PER 기준 (이하)", value=40)
-    target_roe = col_p3.number_input("ROE 기준 (이상 %)", value=10.0)
+    target_rsi = col_p1.number_input("RSI 기준 (이하)", value=35)
+    target_per = col_p2.number_input("PER 기준 (이하)", value=30)
+    target_roe = col_p3.number_input("ROE 기준 (이상 %)", value=15.0)
 
     if st.button("전수 조사 시작", key="btn_scan"):
         st.cache_data.clear()
