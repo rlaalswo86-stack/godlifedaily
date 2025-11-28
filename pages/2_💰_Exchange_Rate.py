@@ -8,7 +8,7 @@ import time
 # --------------------------------------------------------------------------
 st.set_page_config(page_title="Exchange Rate Monitor", page_icon="💰")
 
-# [Style] 모바일 최적화 및 잡다한 UI 숨기기
+# [Style] 모바일 메뉴 살리기 & 잡다한 UI 숨기기
 hide_decoration_bar_style = '''
     <style>
         [data-testid="stToolbar"] {display: none;}
@@ -23,7 +23,7 @@ hide_decoration_bar_style = '''
 st.markdown(hide_decoration_bar_style, unsafe_allow_html=True)
 
 st.title("💰 실시간 환율 대시보드")
-st.markdown("Yahoo Finance 데이터를 기반으로 합니다. (안정성 강화 버전)")
+st.markdown("Yahoo Finance 데이터를 기반으로 합니다.")
 
 # --------------------------------------------------------------------------
 # [Function] 환율 데이터 가져오기
@@ -49,17 +49,36 @@ def get_exchange_rate_data():
         return None
 
 # --------------------------------------------------------------------------
-# [Helper Function] 쉼표 처리기 (String -> Float 변환)
+# [Callback Logic] 입력값 자동 포맷팅 (Interrupt Service Routine)
 # --------------------------------------------------------------------------
-def clean_currency_input(value_str):
-    """
-    사용자가 '1,000,000' 처럼 쉼표를 넣어서 입력해도
-    알아서 쉼표를 떼고 숫자로 바꿔줍니다.
-    """
+# 사용자가 엔터를 치면 이 함수가 실행되어 값을 '성형수술' 합니다.
+def format_krw_input():
+    # 현재 입력된 값 가져오기
+    val = st.session_state.krw_input_key
     try:
-        # 문자열로 들어온 값에서 쉼표(,)를 제거하고 실수형(float)으로 변환
-        return float(str(value_str).replace(',', ''))
-    except ValueError:
+        # 쉼표 제거 후 숫자로 변환
+        num = float(val.replace(',', ''))
+        # 다시 쉼표가 있는 문자열로 변환하여 저장
+        st.session_state.krw_input_key = f"{num:,.0f}"
+    except:
+        # 숫자가 아니면 0으로 초기화
+        st.session_state.krw_input_key = "0"
+
+def format_thb_input():
+    val = st.session_state.thb_input_key
+    try:
+        num = float(val.replace(',', ''))
+        st.session_state.thb_input_key = f"{num:,.0f}"
+    except:
+        st.session_state.thb_input_key = "0"
+
+# --------------------------------------------------------------------------
+# [Helper] 계산용 숫자 변환기
+# --------------------------------------------------------------------------
+def parse_currency(val_str):
+    try:
+        return float(val_str.replace(',', ''))
+    except:
         return 0.0
 
 # --------------------------------------------------------------------------
@@ -76,25 +95,17 @@ st.divider()
 if rates:
     col1, col2 = st.columns(2)
     with col1:
-        st.metric(
-            label="🇺🇸 미국 달러 (USD)", 
-            value=f"{rates['USD']['price']:,.2f} 원", 
-            delta=f"{rates['USD']['change']:,.2f} 원"
-        )
+        st.metric(label="🇺🇸 미국 달러 (USD)", value=f"{rates['USD']['price']:,.2f} 원", delta=f"{rates['USD']['change']:,.2f} 원")
     with col2:
-        st.metric(
-            label="🇹🇭 태국 바트 (THB)", 
-            value=f"{rates['THB']['price']:,.2f} 원", 
-            delta=f"{rates['THB']['change']:,.2f} 원"
-        )
-    st.caption("※ Yahoo Finance 제공 데이터이며, 실제 은행 고시 환율과 약간의 차이가 있을 수 있습니다.")
+        st.metric(label="🇹🇭 태국 바트 (THB)", value=f"{rates['THB']['price']:,.2f} 원", delta=f"{rates['THB']['change']:,.2f} 원")
+    st.caption("※ Yahoo Finance 제공 데이터")
 else:
-    st.error("환율 서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.")
+    st.error("환율 서버 연결 실패")
 
 st.divider()
 
 # --------------------------------------------------------------------------
-# [Feature] 디지털 노마드 계산기 (쉼표 기능 적용)
+# [Feature] 디지털 노마드 계산기 (Auto-Format 적용)
 # --------------------------------------------------------------------------
 st.subheader("🧮 치앙마이 한달 살기 계산기")
 
@@ -104,35 +115,39 @@ if rates:
     calc_tab1, calc_tab2 = st.tabs(["KRW → THB (환전)", "THB → KRW (물가 체감)"])
 
     with calc_tab1:
-        st.caption("가져갈 한국 돈을 입력하세요 (쉼표 사용 가능)")
-        # [수정 포인트] number_input 대신 text_input 사용
-        krw_input_str = st.text_input("한국 돈 (원)", value="1,000,000")
+        st.caption("가져갈 한국 돈을 입력하고 엔터(Enter)를 누르세요.")
         
-        # 입력값 전처리 (Parsing)
-        krw_val = clean_currency_input(krw_input_str)
+        # [핵심] on_change=format_krw_input : 엔터 칠 때 포맷팅 함수 실행
+        # key="krw_input_key" : 이 입력창의 고유 주소 (Address)
+        krw_input_str = st.text_input(
+            "한국 돈 (원)", 
+            value="1,000,000", 
+            key="krw_input_key", 
+            on_change=format_krw_input
+        )
         
+        krw_val = parse_currency(krw_input_str)
         if krw_val > 0:
             thb_result = krw_val / thb_rate
             st.success(f"💰 **{krw_input_str} 원**은 약 **{thb_result:,.0f} 바트**입니다.")
-        else:
-            st.warning("올바른 숫자를 입력해주세요.")
 
     with calc_tab2:
-        st.caption("현지 물건 가격을 입력하세요 (쉼표 사용 가능)")
-        # [수정 포인트] number_input 대신 text_input 사용
-        thb_input_str = st.text_input("현지 가격 (바트)", value="100")
+        st.caption("현지 가격을 입력하고 엔터(Enter)를 누르세요.")
         
-        # 입력값 전처리 (Parsing)
-        thb_val = clean_currency_input(thb_input_str)
+        # [핵심] 바트 입력창도 동일하게 처리
+        thb_input_str = st.text_input(
+            "현지 가격 (바트)", 
+            value="100", 
+            key="thb_input_key", 
+            on_change=format_thb_input
+        )
         
+        thb_val = parse_currency(thb_input_str)
         if thb_val > 0:
             krw_result = thb_val * thb_rate
             st.info(f"🇹🇭 **{thb_input_str} 바트**는 한국 돈으로 약 **{krw_result:,.0f} 원**입니다.")
             
-            coffee_price = 4500
-            if krw_result < coffee_price:
+            if krw_result < 4500:
                  st.write("☕ 오! 한국 커피 한 잔보다 싸네요!")
             else:
                  st.write("💸 흠... 한국 커피보다 비싸군요!")
-        else:
-            st.warning("올바른 숫자를 입력해주세요.")
